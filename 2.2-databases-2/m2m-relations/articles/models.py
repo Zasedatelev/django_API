@@ -1,6 +1,17 @@
 from django.db import models
 
 
+class Theme(models.Model):
+    theme = models.CharField(max_length=50, verbose_name='Темы')
+
+    class Meta:
+        verbose_name = 'Тема'
+        verbose_name_plural = 'Темы'
+
+    def __str__(self):
+        return self.theme
+
+
 class Article(models.Model):
 
     title = models.CharField(max_length=256, verbose_name='Название')
@@ -14,3 +25,9 @@ class Article(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ArticleTheme(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    theme = models.ForeignKey(Theme, on_delete=models.CASCADE)
+    main = models.BooleanField(verbose_name='Главная тема')
