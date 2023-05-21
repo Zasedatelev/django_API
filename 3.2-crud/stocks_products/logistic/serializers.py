@@ -11,7 +11,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductPositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockProduct
-        fields = ['product', 'quantity', 'price']
+        fields = ['products', 'quantity', 'price']
 
 
 class StockSerializer(serializers.ModelSerializer):
@@ -19,43 +19,43 @@ class StockSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Stock
-        fields = ['address', 'products']
+        fields = ['address', 'positions']
 
-        def create(self, validated_data):
-            # достаем связанные данные для других таблиц
-            positions = validated_data.pop('positions')
+    def create(self, validated_data):
+        # достаем связанные данные для других таблиц
+        positions = validated_data.pop('positions')
 
-            # создаем склад по его параметрам
-            stock = super().create(validated_data)
-            models = [StockProduct(stock=stock, **pos) for pos in positions]
-            StockProduct.objects.bulk_create(models)
-            # здесь вам надо заполнить связанные таблицы
-            # в нашем случае: таблицу StockProduct
-            # с помощью списка positions
+        # создаем склад по его параметрам
+        stock = super().create(validated_data)
+        models = [StockProduct(stock=stock, **pos) for pos in positions]
+        StockProduct.objects.bulk_create(models)
+        # здесь вам надо заполнить связанные таблицы
+        # в нашем случае: таблицу StockProduct
+        # с помощью списка positions
 
-            return stock
+        return stock
 
-        def update(self, instance, validated_data):
-            # достаем связанные данные для других таблиц
-            positions = validated_data.pop('positions')
+    def update(self, instance, validated_data):
+        # достаем связанные данные для других таблиц
+        positions = validated_data.pop('positions')
 
-            # обновляем склад по его параметрам
-            stock = super().update(instance, validated_data)
+        # обновляем склад по его параметрам
+        stock = super().update(instance, validated_data)
 
-            # здесь вам надо обновить связанные таблицы
-            # в нашем случае: таблицу StockProduct
-            # с помощью списка positions
-            for pos in positions:
-                StockProduct.objects.update_or_create(
-                    stock=stock,
-                    product=pos['product'],
-                    defaults={
-                        'price': pos['price'],
-                        'quantity': pos['quantity'],
-                    },
-                )
-            StockProduct.objects.filter(stock=stock).exclude(
-                product__in={p['product'] for p in positions}
-            ).delete()
+        # здесь вам надо обновить связанные таблицы
+        # в нашем случае: таблицу StockProduct
+        # с помощью списка positions
+        for pos in positions:
+            StockProduct.objects.update_or_create(
+                stock=stock,
+                product=pos['product'],
+                defaults={
+                    'price': pos['price'],
+                    'quantity': pos['quantity'],
+                },
+            )
+        StockProduct.objects.filter(stock=stock).exclude(
+            product__in={p['product'] for p in positions}
+        ).delete()
 
-            return stock
+        return stock
